@@ -4,3 +4,4 @@ graphs/
 logs/
 results/
 __pycache__/
+venv/

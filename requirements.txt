@@ -1,0 +1,10 @@
+silence_tensorflow
+tensorflow 
+matplotlib
+numpy
+yahoo_fin
+pandas
+progress
+sklearn
+requests_html
+colorama
