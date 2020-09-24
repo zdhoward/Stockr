@@ -57,6 +57,7 @@ def progressbar(epilog, current, max):
 
     if current == max:
         bar.finish()
+        print()
 
 
 class PrintLogs(tf.keras.callbacks.Callback):
