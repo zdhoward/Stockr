@@ -55,7 +55,7 @@ def progressbar(epilog, current, max):
 
     bar.next()
 
-    if current == max:
+    if current + 1 == max:
         bar.finish()
         print()
 
