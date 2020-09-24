@@ -57,7 +57,6 @@ def progressbar(epilog, current, max):
 
     if current + 1 == max:
         bar.finish()
-        print()
 
 
 class PrintLogs(tf.keras.callbacks.Callback):
@@ -109,9 +108,7 @@ def main():
             "future_price": future_price,
             "accuracy": accuracy,
         }
-        data = si.get_data(ticker)["open"].iloc[-1]
 
-    # print(results)
     for ticker in results.keys():
         if args.verbose:
             print(f"==== [ {ticker} ] ====")
