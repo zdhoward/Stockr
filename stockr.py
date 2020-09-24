@@ -20,6 +20,9 @@ import argparse
 from datetime import datetime
 from progress.bar import PixelBar
 
+physical_devices = tf.config.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
+
 # Window size or the sequence length
 N_STEPS = 70  # 150
 # Lookup step, 1 is the next day
@@ -32,6 +35,10 @@ tf.random.set_seed(314)
 random.seed(314)
 
 bar = PixelBar()
+
+date_string = datetime.now().strftime("%Y-%m-%d")
+
+PORTFOLIO = ["ACB", "AVID", "HMMJ.TO", "BTB-UN.TO", "NWH-UN.TO", "OGI", "PYPL"]
 
 
 def progressbar(epilog, current, max):
@@ -80,29 +87,59 @@ class PrintLogs(tf.keras.callbacks.Callback):
 
 def main():
     args = parse_arguments()
-    tickets = args.tickets.split(",")
+    tickets = []
+    if args.portfolio:
+        tickets = PORTFOLIO
+        # print(tickets)
+    elif args.tickets != "":
+        tickets = args.tickets.split(",")
+        # print(tickets)
+    else:
+        print("Please include -p or -t")
+        exit()
     results = {}
     for ticker in tickets:
         #  print(f"Analyzing: [ {ticker} ]")
         # print(ticker)
+        current_price = round(si.get_data(ticker)["open"].iloc[-1], 2)
         mean_absolute_error, future_price, accuracy = analyze(ticker)
         results[ticker] = {
+            "current_price": current_price,
             "mean_absolute_error": mean_absolute_error,
             "future_price": future_price,
             "accuracy": accuracy,
         }
+        data = si.get_data(ticker)["open"].iloc[-1]
+
     # print(results)
     for ticker in results.keys():
         print(f"==== [ {ticker} ] ====")
-        print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
+        print(f"Price       : {results[ticker]['current_price']}")
         print(f"Future Price: {results[ticker]['future_price']}")
+        print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
         print(f"Accuracy    : {results[ticker]['accuracy']}")
+        print()
+        if (
+            results[ticker]["future_price"] - results[ticker]["current_price"]
+            > results[ticker]["future_price"] * 0.05
+        ):
+            action = "BUY"
+
+        elif (
+            results[ticker]["future_price"] - results[ticker]["current_price"]
+            < -results[ticker]["future_price"] * 0.05
+        ):
+            action = "SELL"
+        else:
+            action = "HOLD"
+        print(f"ACTION      : {action}")
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Process some integers.")
+    parser.add_argument("-t", "--tickets", help="an integer for the accumulator")
     parser.add_argument(
-        "-t", "--tickets", required=True, help="an integer for the accumulator"
+        "-p", "--portfolio", help="Analyze saved stocks", action="store_true"
     )
     args = parser.parse_args()
     return args
@@ -153,6 +190,8 @@ def analyze(ticker):
         os.mkdir("data")
     if not os.path.isdir("graphs"):
         os.mkdir("graphs")
+    if not os.path.isdir(f"graphs/{date_string}"):
+        os.mkdir(f"graphs/{date_string}")
 
     # load the data
     data = load_data(
@@ -318,6 +357,7 @@ def load_data(
         result["y_train"],
         result["y_test"],
     ) = train_test_split(X, y, test_size=test_size, shuffle=shuffle)
+
     # return the result
     return result
 
@@ -405,8 +445,8 @@ def plot_graph(model, data, ticker):
     plt.ylabel("Price")
     plt.legend(["Actual Price", "Predicted Price"])
     # plt.show()
-    date_string = datetime.now().strftime("%Y-%m-%d")
-    plt.savefig(f"graphs/{ticker}_{date_string}.jpg")
+    plt.savefig(f"graphs/{date_string}/{ticker}.jpg")
+    plt.clf()  # clears the plot for the next ticker
 
 
 def get_accuracy(model, data):
