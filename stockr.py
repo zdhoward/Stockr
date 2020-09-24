@@ -113,7 +113,7 @@ def main():
     # print(results)
     for ticker in results.keys():
         if args.verbose:
-        print(f"==== [ {ticker} ] ====")
+            print(f"==== [ {ticker} ] ====")
             print(f"Price       : {results[ticker]['current_price']}")
             print(f"Future Price: {results[ticker]['future_price']}")
             print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
@@ -141,6 +141,7 @@ def parse_arguments():
     parser.add_argument(
         "-p", "--portfolio", help="Analyze saved stocks", action="store_true"
     )
+    parser.add_argument('-v', "--verbose", help="" action="store_true")
     args = parser.parse_args()
     return args
 
