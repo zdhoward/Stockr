@@ -1,5 +1,4 @@
 import silence_tensorflow.auto
-
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
@@ -15,10 +14,10 @@ import matplotlib.pyplot as plt
 import random
 import time
 import os
-
 import argparse
 from datetime import datetime
 from progress.bar import PixelBar
+from colorama import Fore
 
 physical_devices = tf.config.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -113,23 +112,24 @@ def main():
 
     # print(results)
     for ticker in results.keys():
+        if args.verbose:
         print(f"==== [ {ticker} ] ====")
-        print(f"Price       : {results[ticker]['current_price']}")
-        print(f"Future Price: {results[ticker]['future_price']}")
-        print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
-        print(f"Accuracy    : {results[ticker]['accuracy']}")
-        print()
+            print(f"Price       : {results[ticker]['current_price']}")
+            print(f"Future Price: {results[ticker]['future_price']}")
+            print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
+            print(f"Accuracy    : {results[ticker]['accuracy']}")
+            print()
         if (
             results[ticker]["future_price"] - results[ticker]["current_price"]
             > results[ticker]["future_price"] * 0.05
         ):
-            action = "BUY"
+            action = f"== {Fore.GREEN}BUY {ticker}{Fore.RESET}"
 
         elif (
             results[ticker]["future_price"] - results[ticker]["current_price"]
             < -results[ticker]["future_price"] * 0.05
         ):
-            action = "SELL"
+            action = f"{Fore.RED}SELL{Fore.RESET}"
         else:
             action = "HOLD"
         print(f"ACTION      : {action}")
