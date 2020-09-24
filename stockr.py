@@ -141,7 +141,7 @@ def parse_arguments():
     parser.add_argument(
         "-p", "--portfolio", help="Analyze saved stocks", action="store_true"
     )
-    parser.add_argument('-v', "--verbose", help="" action="store_true")
+    parser.add_argument('-v', "--verbose", help="", action="store_true")
     args = parser.parse_args()
     return args
 
