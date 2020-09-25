@@ -18,6 +18,8 @@ import argparse
 from datetime import datetime
 from progress.bar import PixelBar
 from colorama import Fore
+import platform
+import subprocess
 
 physical_devices = tf.config.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -40,50 +42,6 @@ date_string = datetime.now().strftime("%Y-%m-%d")
 PORTFOLIO = ["ACB", "AVID", "HMMJ.TO", "BTB-UN.TO", "NWH-UN.TO", "OGI", "PYPL"]
 
 
-def progressbar(epilog, current, max):
-    global bar
-    if current == 0:
-        bar = PixelBar()
-        width, height = os.get_terminal_size()
-        width -= len(f"{max}/{max}")
-        width -= len(epilog)
-        width -= 2  # ears
-        width -= 3  # number of spaces
-        bar = PixelBar(epilog, max=max, width=width)
-
-    # width -= len(f"{max}/{max}")
-
-    bar.next()
-
-    if current + 1 == max:
-        bar.finish()
-
-
-class PrintLogs(tf.keras.callbacks.Callback):
-    def __init__(self, epochs, ticker):
-        self.epochs = epochs
-        self.ticker = ticker
-
-    def set_params(self, params):
-        params["epochs"] = 0
-
-    def on_epoch_begin(self, epoch, logs=None):
-        progressbar(f"{self.ticker}:", epoch, self.epochs)
-        # if epoch == self.epochs:
-        #    #print(f"Epoch {epoch + 1}/{self.epochs}", end="\n")
-        #    progressbar(f"Ticker:", epoch, self.epochs)
-
-        # else:
-        #    print(f"Epoch {epoch + 1}/{self.epochs}", end="\r")
-        # sys.stdout.write(f"\rEpoch {epoch + 1}/{self.epochs}")
-        # sys.stdout.flush()
-        # pass
-
-    def on_epoch_end(self, epoch, logs=None):
-        # print()
-        pass
-
-
 def main():
     args = parse_arguments()
     tickets = []
@@ -102,6 +60,7 @@ def main():
         # print(ticker)
         current_price = round(si.get_data(ticker)["open"].iloc[-1], 2)
         mean_absolute_error, future_price, accuracy = analyze(ticker)
+
         results[ticker] = {
             "current_price": current_price,
             "mean_absolute_error": mean_absolute_error,
@@ -109,28 +68,80 @@ def main():
             "accuracy": accuracy,
         }
 
+        results[ticker]["action"] = define_action(results[ticker])
+
+    display_results(results)
+
+    save_results(results)
+
+    if args.open_folder:
+        open_folder(os.path.join(os.getcwd(), "history"))
+        open_folder(os.path.join(os.getcwd(), "graphs", date_string))
+
+
+def open_folder(path):
+    if platform.system() == "Windows":
+        # os.startfile(path)
+        subprocess.Popen(["explorer", path])
+    elif platform.system() == "Darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
+
+def define_action(result):
+    if result["future_price"] - result["current_price"] > result["future_price"] * 0.05:
+        action = f"{Fore.GREEN}BUY{Fore.RESET}"
+
+    elif (
+        result["future_price"] - result["current_price"]
+        < -result["future_price"] * 0.05
+    ):
+        action = f"{Fore.RED}SELL{Fore.RESET}"
+    else:
+        action = "HOLD"
+    return action
+
+
+def display_results(results, verbose=False):
     for ticker in results.keys():
-        if args.verbose:
+        if verbose:
             print(f"==== [ {ticker} ] ====")
             print(f"Price       : {results[ticker]['current_price']}")
             print(f"Future Price: {results[ticker]['future_price']}")
             print(f"Mean Abs Err: {results[ticker]['mean_absolute_error']}")
             print(f"Accuracy    : {results[ticker]['accuracy']}")
             print()
-        if (
-            results[ticker]["future_price"] - results[ticker]["current_price"]
-            > results[ticker]["future_price"] * 0.05
-        ):
-            action = f"== {Fore.GREEN}BUY {ticker}{Fore.RESET}"
 
-        elif (
-            results[ticker]["future_price"] - results[ticker]["current_price"]
-            < -results[ticker]["future_price"] * 0.05
-        ):
-            action = f"{Fore.RED}SELL{Fore.RESET}"
-        else:
-            action = "HOLD"
-        print(f"ACTION      : {action}")
+        print(
+            f"ACTION      : == {results[ticker]['action']} {ticker} ({round(results[ticker]['accuracy'] * 100, 2)}%)"
+        )
+
+
+def save_results(results):
+    data = {
+        "ticker": [],
+        "current_price": [],
+        "future_price": [],
+        "mean_absolute_error": [],
+        "accuracy": [],
+        "action": [],
+    }
+    for ticker in results.keys():
+        data["ticker"].append(ticker)
+        data["current_price"].append(round(results[ticker]["current_price"]))
+        data["future_price"].append(round(results[ticker]["future_price"]))
+        data["mean_absolute_error"].append(
+            round(results[ticker]["mean_absolute_error"])
+        )
+        data["accuracy"].append(round(results[ticker]["accuracy"]))
+        data["action"].append(
+            "".join([c for c in results[ticker]["action"] if c.isupper()])
+        )
+
+    tickers_string = "-".join(sorted(results.keys()))
+    filename = f"{date_string}-{tickers_string}"
+    pd.DataFrame(data=data).to_csv(f"history/{filename}.csv")
 
 
 def parse_arguments():
@@ -139,7 +150,8 @@ def parse_arguments():
     parser.add_argument(
         "-p", "--portfolio", help="Analyze saved stocks", action="store_true"
     )
-    parser.add_argument('-v', "--verbose", help="", action="store_true")
+    parser.add_argument("-v", "--verbose", help="", action="store_true")
+    parser.add_argument("-o", "--open-folder", help="", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -187,6 +199,8 @@ def analyze(ticker):
         os.mkdir("logs")
     if not os.path.isdir("data"):
         os.mkdir("data")
+    if not os.path.isdir("history"):
+        os.mkdir("history")
     if not os.path.isdir("graphs"):
         os.mkdir("graphs")
     if not os.path.isdir(f"graphs/{date_string}"):
@@ -475,5 +489,40 @@ def get_accuracy(model, data):
     return accuracy_score(y_test, y_pred)
 
 
+def progressbar(epilog, current, max):
+    global bar
+    if current == 0:
+        bar = PixelBar()
+        width, height = os.get_terminal_size()
+        width -= len(f"{max}/{max}")
+        width -= len(epilog)
+        width -= 2  # ears
+        width -= 3  # number of spaces
+        bar = PixelBar(epilog, max=max, width=width)
+
+    # width -= len(f"{max}/{max}")
+
+    bar.next()
+
+    if current + 1 == max:
+        bar.finish()
+
+
+class PrintLogs(tf.keras.callbacks.Callback):
+    def __init__(self, epochs, ticker):
+        self.epochs = epochs
+        self.ticker = ticker
+
+    def set_params(self, params):
+        params["epochs"] = 0
+
+    def on_epoch_begin(self, epoch, logs=None):
+        progressbar(f"{self.ticker}:", epoch, self.epochs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        pass
+
+
 if __name__ == "__main__":
     main()
+    # open_folder("F://Programming")

@@ -5,3 +5,5 @@ logs/
 results/
 __pycache__/
 venv/
+history/
+test.py
