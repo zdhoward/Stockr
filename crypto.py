@@ -1,7 +1,22 @@
 from pycoingecko import CoinGeckoAPI
 from pprint import pprint
+import argparse
 
 cg = CoinGeckoAPI()
+
+
+def parse_arguments():
+    # create the top-level parser
+    parser = argparse.ArgumentParser(prog=__file__)
+    # parser.add_argument("--foo", action="store_true", help="foo help")
+    subparsers = parser.add_subparsers(help="sub-command help")
+    # create portfolio sub command
+    parser_portfolio = subparsers.add_parser("portfolio", help="Portfolio Help")
+    parser_portfolio.add_argument("set", help="Set your portfolio")
+
+    args = parser.parse_args()
+    pprint(args)
+    return args
 
 
 def sanitize_number(num):
@@ -24,6 +39,8 @@ def sanitize_number(num):
 
     return num
 
+
+args = parse_arguments()
 
 bitc_price = cg.get_price(
     ids="bitcoin,litecoin,ethereum",
@@ -54,4 +71,4 @@ volume = sanitize_number(volume)
 
 print(f"{symbol}:\t{name}\t${price}\t${market_cap}\t{volume}")
 
-# pprint(history)
+pprint(history)

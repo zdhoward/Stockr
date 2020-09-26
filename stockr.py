@@ -39,7 +39,21 @@ bar = PixelBar()
 
 date_string = datetime.now().strftime("%Y-%m-%d")
 
-PORTFOLIO = ["ACB", "AVID", "HMMJ.TO", "BTB-UN.TO", "NWH-UN.TO", "OGI", "PYPL"]
+PORTFOLIO = [
+    "ACB",
+    "AVID",
+    "HMMJ.TO",
+    "BTB-UN.TO",
+    "NWH-UN.TO",
+    "OGI",
+    "PYPL",
+    "WELL.TO",
+    "BTC-CAD",
+    "ETH-CAD",
+    "BNB-CAD",
+    "ADA-CAD",
+    "TRX-CAD",
+]
 
 
 def main():
@@ -145,6 +159,9 @@ def save_results(results):
 
 
 def parse_arguments():
+    # portfolio_parser = argparse.ArgumentParser(description="Manage your portfolio")
+    # parser.add_argument("set", description="Set what defines your portfolio")
+
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("-t", "--tickets", help="an integer for the accumulator")
     parser.add_argument(
@@ -242,6 +259,7 @@ def analyze(ticker):
         epochs=EPOCHS,
         validation_data=(data["X_test"], data["y_test"]),
         callbacks=[PrintLogs(EPOCHS, ticker)],
+        # callbacks=[PrintLogs(EPOCHS, ticker), tensorboard, checkpointer],
         verbose=5,
     )
     model.save(os.path.join("results", model_name) + ".h5")
@@ -518,9 +536,6 @@ class PrintLogs(tf.keras.callbacks.Callback):
 
     def on_epoch_begin(self, epoch, logs=None):
         progressbar(f"{self.ticker}:", epoch, self.epochs)
-
-    def on_epoch_end(self, epoch, logs=None):
-        pass
 
 
 if __name__ == "__main__":
