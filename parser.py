@@ -1,35 +1,48 @@
 import argparse
 from pprint import pprint
-
+import os
 preference_folder = "user/"
-
-
+import configparser
 def main(command_line=None):
     args = parse_arguments(command_line)
     pprint(args)
+    print(args.set)
+    prefs = {'stocks': args.set}
+    save_prefs(prefs)
 
 
 def parse_arguments(command_line=None):
     parser = argparse.ArgumentParser("STOCKR")
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
 
     module_parser = parser.add_subparsers(dest="module")
 
     predict_parser = module_parser.add_parser("predict", help="predict prices")
-    predict_parser.add_argument("--tickers")
-    predict_parser.add_argument("--portfolio")
-    predict_parser.add_argument("--open-folders")
+    predict_parser.add_argument("-t", "--tickers")
+    predict_parser.add_argument("-p", "--portfolio", action='store_true')
+    predict_parser.add_argument("-o", "--open-folders", action='store_true')
 
     portfolio_parser = module_parser.add_parser("portfolio", help="manage portfolio")
-    portfolio_parser.add_argument("--set")
-    portfolio_parser.add_argument("--view", action="store_true")
-    portfolio_parser.add_argument("--add")
-    portfolio_parser.add_argument("--remove")
+    portfolio_parser.add_argument("-s", "--set")
+    portfolio_parser.add_argument("-v", "--view", action="store_true")
+    portfolio_parser.add_argument("-a", "--add")
+    portfolio_parser.add_argument("-r", "--remove")
 
     args = parser.parse_args(command_line)
 
     return args
 
+def save_prefs(prefs):
+    dir = ".config"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    Config = configparser.ConfigParser()
+    cfgfile = open(os.path.join(dir, 'stockr.cfg'), 'w')
+    Config.add_section('portfolio')
+    Config.set('portfolio', 'stocks', prefs['stocks'])
+    Config.write(cfgfile)
+    cfgfile.close()
+    
 
 def parse_old():
     parser = argparse.ArgumentParser("Blame Praise app")
