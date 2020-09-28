@@ -37,6 +37,7 @@ random.seed(314)
 
 bar = PixelBar()
 
+## TODO: This needs to take market open and closing times into effect. ie. running at 12:01am will not reflect the day it is on
 date_string = datetime.now().strftime("%Y-%m-%d")
 
 PORTFOLIO = [

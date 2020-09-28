@@ -12,7 +12,9 @@ def parse_arguments():
     subparsers = parser.add_subparsers(help="sub-command help")
     # create portfolio sub command
     parser_portfolio = subparsers.add_parser("portfolio", help="Portfolio Help")
-    parser_portfolio.add_argument("set", help="Set your portfolio")
+    parser_portfolio.add_argument(
+        "set", help="Set your portfolio", dest="set_portfolio"
+    )
 
     args = parser.parse_args()
     pprint(args)
